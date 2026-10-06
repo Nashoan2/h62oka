@@ -74,8 +74,8 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (!isDestroyed) {
                     result.fold(
-                        onSuccess = { toast("OpenSwift data exported") },
-                        onFailure = { toast("Export failed: ${it.message ?: "unknown error"}") },
+                        onSuccess = { toast("تم تصدير النسخة الاحتياطية بنجاح إلى المجلد المحدد ✓") },
+                        onFailure = { toast("فشل تصدير النسخة الاحتياطية: ${it.message ?: "خطأ غير معروف"}") },
                     )
                 }
             }

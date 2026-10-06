@@ -119,13 +119,13 @@ class ClipboardHistory(ctx: Context) {
         clearPinned()
     }
 
-    private fun savePinned(list: List<String>) {
+    internal fun savePinned(list: List<String>) {
         val arr = JSONArray()
         list.forEach { arr.put(it) }
         prefs.edit().putString("pinned_items", arr.toString()).commit()
     }
 
-    private fun save(list: List<String>) {
+    internal fun save(list: List<String>) {
         val arr = JSONArray()
         list.forEach { arr.put(it) }
         prefs.edit().putString("items", arr.toString()).commit()

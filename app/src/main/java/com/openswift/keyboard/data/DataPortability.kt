@@ -28,9 +28,11 @@ class DataPortability(private val context: Context) {
         val snippets: Int,
         val customThemes: Int,
         val customLayouts: Int,
+        val clipboardItems: Int = 0,
     ) {
         fun asMessage(): String =
-            "تم استيراد $dictionaryWords كلمة متعلمة، و $snippets قصاصة، و $customThemes سمة، و $customLayouts تخطيط"
+            "تمت استعادة البيانات بنجاح: $dictionaryWords كلمة متعلمة، و $snippets قصاصة، و $customThemes سمة، و $customLayouts تخطيط" +
+                (if (clipboardItems > 0) "، و $clipboardItems عنصر حافظة" else "")
     }
 
     fun exportJson(scope: Scope = Scope.FULL_BACKUP): String {
@@ -41,6 +43,14 @@ class DataPortability(private val context: Context) {
             .put("snippets", exportSnippets())
             .put("customThemes", exportCustomThemes())
         if (scope.includesLayouts) root.put("customLayouts", exportCustomLayouts())
+
+        try {
+            val cb = ClipboardHistory(context)
+            val cbObj = JSONObject()
+                .put("items", JSONArray(cb.items()))
+                .put("pinned_items", JSONArray(cb.pinnedItems()))
+            root.put("clipboardHistory", cbObj)
+        } catch (_: Exception) {}
 
         return root.toString(2).also { exported ->
             if (exported.toByteArray(Charsets.UTF_8).size > MAX_DOCUMENT_BYTES) {
@@ -115,11 +125,37 @@ class DataPortability(private val context: Context) {
         commitMutations(mutations)
         repairSelectionsAfterReplace(mode, finalThemes, finalLayouts)
 
+        var restoredClipboardCount = 0
+        if (imported.clipboardHistory != null) {
+            try {
+                val cb = ClipboardHistory(context)
+                val incomingItems = imported.clipboardHistory.optJSONArray("items")?.let { arr ->
+                    List(arr.length()) { arr.optString(it) }.filter { it.isNotBlank() }
+                } ?: emptyList()
+                val incomingPinned = imported.clipboardHistory.optJSONArray("pinned_items")?.let { arr ->
+                    List(arr.length()) { arr.optString(it) }.filter { it.isNotBlank() }
+                } ?: emptyList()
+
+                if (mode == ImportMode.REPLACE) {
+                    if (incomingItems.isNotEmpty()) cb.save(incomingItems)
+                    if (incomingPinned.isNotEmpty()) cb.savePinned(incomingPinned)
+                    restoredClipboardCount = incomingItems.size + incomingPinned.size
+                } else {
+                    val mergedItems = (incomingItems + cb.items()).distinct().take(100)
+                    val mergedPinned = (incomingPinned + cb.pinnedItems()).distinct().take(50)
+                    cb.save(mergedItems)
+                    cb.savePinned(mergedPinned)
+                    restoredClipboardCount = incomingItems.size + incomingPinned.size
+                }
+            } catch (_: Exception) {}
+        }
+
         return ImportSummary(
             dictionaryWords = countDictionaryWords(imported.userDictionaries),
             snippets = imported.snippets.length(),
             customThemes = imported.customThemes.length(),
             customLayouts = imported.customLayouts.length(),
+            clipboardItems = restoredClipboardCount,
         )
     }
 
@@ -321,18 +357,20 @@ class DataPortability(private val context: Context) {
             val snippets: JSONArray,
             val customThemes: JSONArray,
             val customLayouts: JSONArray,
+            val clipboardHistory: JSONObject? = null,
         )
 
         fun dictionaryPrefsName(languageCode: String): String =
             TypedDataStores.userDictionary(languageCode)
 
         internal fun parseImport(raw: String, scope: Scope): ParsedImport {
-            validate(raw.isNotBlank()) { "The data file is empty." }
-            validate(raw.toByteArray(Charsets.UTF_8).size <= MAX_DOCUMENT_BYTES) {
+            val cleanRaw = raw.removePrefix("\uFEFF").trim()
+            validate(cleanRaw.isNotBlank()) { "The data file is empty." }
+            validate(cleanRaw.toByteArray(Charsets.UTF_8).size <= MAX_DOCUMENT_BYTES) {
                 "The data file is larger than 4 MiB."
             }
             val root = try {
-                JSONObject(raw)
+                JSONObject(cleanRaw)
             } catch (error: JSONException) {
                 throw DataPortabilityException("The data file is not valid JSON.", error)
             }
@@ -377,6 +415,7 @@ class DataPortability(private val context: Context) {
                 snippets = validateSnippets(snippets, "snippets"),
                 customThemes = validateThemes(themes),
                 customLayouts = validateLayouts(layouts),
+                clipboardHistory = root.optJSONObject("clipboardHistory"),
             )
         }
 

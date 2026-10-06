@@ -98,12 +98,12 @@ class VoiceRecognizer(private val ctx: Context) {
                             if (isContinuous) {
                                 startListeningInternal()
                             }
-                        }, 100L)
+                        }, 80L)
                     } else {
                         isListening = false
                         mainHandler.postDelayed({
                             muteAllBeeps(false)
-                        }, 500L)
+                        }, 400L)
                     }
                 }
 
@@ -118,7 +118,7 @@ class VoiceRecognizer(private val ctx: Context) {
                             if (isContinuous) {
                                 startListeningInternal()
                             }
-                        }, 150L)
+                        }, 100L)
                         return
                     }
 
@@ -179,11 +179,11 @@ class VoiceRecognizer(private val ctx: Context) {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, currentLanguage)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, currentLanguage)
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 2000L)
+                // Balanced "medium" timing: not sluggish, but gives natural conversational pause (وسط)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1200L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 900L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 600L)
             }
             recognizer?.startListening(intent)
             isListening = true
