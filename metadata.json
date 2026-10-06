@@ -1,0 +1,8 @@
+{
+  "name": "Remix kbard123ok62",
+  "description": "Imported from GitHub: 62",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
