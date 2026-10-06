@@ -1,6 +1,6 @@
 {
   "name": "OpenSwift",
-  "description": "OpenSwift privacy-first multilingual Android keyboard",
+  "description": "OpenSwift - Privacy-focused multilingual keyboard with swipe typing, themes, and offline prediction.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

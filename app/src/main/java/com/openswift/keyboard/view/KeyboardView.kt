@@ -41,6 +41,7 @@ class KeyboardView(
     private var suggestions: List<String> = emptyList()
     private var shiftActive = false
     private var predictionEnabled = true
+    private var toolbarVisible = true
     private var glideEnabled = settings.glideEnabled
     private var keyHeightDp = settings.keyHeightDp
     private var glideDecoder = GlideDecoder(wordList, userDict)
@@ -242,7 +243,7 @@ class KeyboardView(
         val keyHeightPx = keyHeightDp * density
         val numRows = if (effectiveLayout.id == "numpad") 4 else effectiveLayout.rows.size // includes number row if enabled
         val rowSpacingPx = 2f * density
-        val suggestionHeight = if (predictionEnabled) {
+        val suggestionHeight = if (toolbarVisible || predictionEnabled) {
             (4f * density) + (keyHeightPx * 0.82f) + (4f * density)
         } else {
             0f
@@ -293,11 +294,11 @@ class KeyboardView(
         suggestionBounds.clear()
         toolbarBounds.clear()
 
-        if (predictionEnabled) {
+        if (toolbarVisible || predictionEnabled) {
             y = 4f * density // small top padding
             canvas.drawRect(0f, 0f, w, y + suggestionHeightPx, suggestionBgPaint)
 
-            val showWordSuggestions = false
+            val showWordSuggestions = predictionEnabled && suggestions.isNotEmpty()
             if (showWordSuggestions && suggestions.isNotEmpty()) {
                 val outerPadding = 10f * density
                 val pillGap = 8f * density
@@ -894,7 +895,7 @@ class KeyboardView(
     }
 
     fun setSuggestions(sugg: List<String>) {
-        suggestions = emptyList()
+        suggestions = if (predictionEnabled) sugg else emptyList()
         invalidate()
     }
 
@@ -905,9 +906,20 @@ class KeyboardView(
             suggestions = emptyList()
             suggestionBounds.clear()
         }
+        if (!toolbarVisible) {
+            requestLayout()
+        }
+        invalidate()
+    }
+
+    fun setToolbarVisible(visible: Boolean) {
+        if (toolbarVisible == visible) return
+        toolbarVisible = visible
         requestLayout()
         invalidate()
     }
+
+    fun isToolbarVisible(): Boolean = toolbarVisible
 
     fun setInputProfile(predictionsEnabled: Boolean, glideEnabled: Boolean, keyHeightDp: Int) {
         setPredictionEnabled(predictionsEnabled)
