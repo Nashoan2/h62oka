@@ -523,8 +523,7 @@ class OpenSwiftIME : InputMethodService() {
     }
 
     private fun showClipboardView() {
-        if (privacyModeActive) return
-        clipboard.captureSystem(this, enabled = true, privateField = false)
+        clipboard.captureSystem(this, enabled = true, privateField = privacyModeActive)
         clipboardMode = true
         clipboardView.refresh()
         setInputView(clipboardInputView)
