@@ -393,8 +393,9 @@ fun MainUI(
     val themeEditor = remember(context) { ThemeEditor(context) }
     val availableThemes = remember(themeEditor) { themeEditor.listThemes() }
     val customLayouts = remember(context) { CustomLayoutStore(context).list() }
+    var currentThemeId by remember { mutableStateOf(settings.theme) }
     
-    val theme = themeEditor.resolve(settings.theme)
+    val theme = themeEditor.resolve(currentThemeId)
     val bgColor = Color(theme.background)
     val keyBgColor = Color(theme.keyBackground)
     val textColor = Color(theme.keyText)
@@ -438,6 +439,7 @@ fun MainUI(
                         initialPerAppPackage,
                         availableThemes,
                         customLayouts.map { it.id to it.name },
+                        onThemeChanged = { currentThemeId = it },
                     )
                     2 -> PrivacyUI(
                         ClipboardHistory(context),
@@ -515,6 +517,7 @@ fun EnhancedSettingsUI(
     initialPerAppPackage: String = "",
     availableThemes: List<KbTheme>,
     customLayoutOptions: List<Pair<String, String>>,
+    onThemeChanged: (String) -> Unit = {},
 ) {
     var selectedThemeId by remember { mutableStateOf(settings.theme) }
     Column(
@@ -543,6 +546,7 @@ fun EnhancedSettingsUI(
                 onThemeChange = {
                     settings.theme = it
                     selectedThemeId = it
+                    onThemeChanged(it)
                 },
                 themes = availableThemes,
                 bgColor = bgColor,
@@ -567,7 +571,13 @@ fun EnhancedSettingsUI(
                             "qwerty" to "الإنجليزية (QWERTY)",
                         ) + customLayoutOptions
                     ),
-                    "الارتفاع" to emptyList()
+                    "الارتفاع" to listOf(
+                        "58" to "صغير (58 dp)",
+                        "68" to "متوسط (68 dp)",
+                        "78" to "مرتفع - افتراضي (78 dp)",
+                        "88" to "كبير (88 dp)",
+                        "96" to "كبير جداً (96 dp)",
+                    )
                 ),
                 settings,
                 textColor,
@@ -581,6 +591,7 @@ fun EnhancedSettingsUI(
             textColor = textColor,
             accentColor = accentColor
         ) {
+            ToggleOption("صف الأرقام العلوي", settings.numberRow, textColor) { settings.numberRow = it }
             ToggleOption("الكتابة بالسحب السريع", settings.glideEnabled, textColor) { settings.glideEnabled = it }
             ToggleOption("التصحيح التلقائي", settings.autoCorrect, textColor) { settings.autoCorrect = it }
             ToggleOption("التعرف التلقائي على اللغة", settings.languageDetection, textColor) { settings.languageDetection = it }
@@ -974,6 +985,7 @@ fun SettingsList(
 ) {
     var selectedLanguage by remember { mutableStateOf(settings.language) }
     var selectedLayout by remember { mutableStateOf(settings.layout) }
+    var selectedHeight by remember { mutableStateOf(settings.keyHeightDp.toString()) }
 
     items.forEach { (label, options) ->
         if (options.isNotEmpty()) {
@@ -989,6 +1001,7 @@ fun SettingsList(
                         selected = when (label) {
                             "Language", "اللغة" -> selectedLanguage == id
                             "Layout", "التخطيط" -> selectedLayout == id
+                            "Height", "الارتفاع" -> selectedHeight == id
                             else -> false
                         },
                         onClick = {
@@ -1001,6 +1014,12 @@ fun SettingsList(
                                 "Layout", "التخطيط" -> {
                                     settings.layout = id
                                     selectedLayout = id
+                                }
+                                "Height", "الارتفاع" -> {
+                                    id.toIntOrNull()?.let { dp ->
+                                        settings.keyHeightDp = dp
+                                        selectedHeight = id
+                                    }
                                 }
                             }
                         },
@@ -1019,6 +1038,7 @@ fun ToggleOption(
     textColor: Color,
     onToggle: (Boolean) -> Unit,
 ) {
+    var checked by remember(value) { mutableStateOf(value) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1033,8 +1053,11 @@ fun ToggleOption(
             modifier = Modifier.weight(1f)
         )
         Switch(
-            checked = value,
-            onCheckedChange = onToggle,
+            checked = checked,
+            onCheckedChange = {
+                checked = it
+                onToggle(it)
+            },
             modifier = Modifier.scale(0.95f)
         )
     }

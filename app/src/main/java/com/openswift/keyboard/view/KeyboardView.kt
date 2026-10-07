@@ -187,10 +187,11 @@ class KeyboardView(
     private val trailFadeMs = 300L
 
     // Lam-Alef symbols & hamzas popup palette
+    private data class PopupButton(val id: String, val label: String, val rect: RectF)
     private var isLamAlefPopupVisible = false
     private val lamAlefPopupCardRect = RectF()
-    private val lamAlefPopupButtons = mutableMapOf<String, RectF>()
-    private var pressedPopupButton: String? = null
+    private val lamAlefPopupButtons = mutableListOf<PopupButton>()
+    private var pressedPopupButtonId: String? = null
     private val scrimPaint = Paint().apply {
         color = 0xAA000000.toInt()
         style = Paint.Style.FILL
@@ -1247,11 +1248,12 @@ class KeyboardView(
         val gap1 = 6f * density
         val btnW1 = (availW - (gap1 * 5f)) / 6f
         var curX1 = cardLeft + padH
-        for (label in row1) {
+        row1.forEachIndexed { idx, label ->
+            val btnId = "r1_${idx}_$label"
             val rect = RectF(curX1, curY, curX1 + btnW1, curY + btnHeight1)
-            lamAlefPopupButtons[label] = rect
+            lamAlefPopupButtons.add(PopupButton(btnId, label, rect))
 
-            val isPressed = pressedPopupButton == label
+            val isPressed = pressedPopupButtonId == btnId
             canvas.drawRoundRect(rect, btnRadius, btnRadius, if (isPressed) pressedBtnPaint else normalBtnPaint)
             canvas.drawRoundRect(rect, btnRadius, btnRadius, btnBorderPaint)
 
@@ -1268,11 +1270,12 @@ class KeyboardView(
         val gap2 = 3.2f * density
         val btnW2 = (availW - (gap2 * 12f)) / 13f
         var curX2 = cardLeft + padH
-        for (label in row2) {
+        row2.forEachIndexed { idx, label ->
+            val btnId = "r2_${idx}_$label"
             val rect = RectF(curX2, curY, curX2 + btnW2, curY + btnHeight2)
-            lamAlefPopupButtons[label] = rect
+            lamAlefPopupButtons.add(PopupButton(btnId, label, rect))
 
-            val isPressed = pressedPopupButton == label
+            val isPressed = pressedPopupButtonId == btnId
             canvas.drawRoundRect(rect, btnRadius, btnRadius, if (isPressed) pressedBtnPaint else normalBtnPaint)
             canvas.drawRoundRect(rect, btnRadius, btnRadius, btnBorderPaint)
 
@@ -1289,11 +1292,12 @@ class KeyboardView(
         val gap3 = 8f * density
         val btnW3 = (availW - (gap3 * 4f)) / 5f
         var curX3 = cardLeft + padH
-        for (label in row3) {
+        row3.forEachIndexed { idx, label ->
+            val btnId = "r3_${idx}_$label"
             val rect = RectF(curX3, curY, curX3 + btnW3, curY + btnHeight3)
-            lamAlefPopupButtons[label] = rect
+            lamAlefPopupButtons.add(PopupButton(btnId, label, rect))
 
-            val isPressed = pressedPopupButton == label
+            val isPressed = pressedPopupButtonId == btnId
             val isClose = label == "✕"
             val bgPaint = when {
                 isPressed -> pressedBtnPaint
@@ -1317,24 +1321,25 @@ class KeyboardView(
         val y = event.y
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                pressedPopupButton = findLamAlefPopupButtonAt(x, y)
+                pressedPopupButtonId = findLamAlefPopupButtonAt(x, y)?.id
                 invalidate()
             }
             MotionEvent.ACTION_MOVE -> {
-                val current = findLamAlefPopupButtonAt(x, y)
-                if (current != pressedPopupButton) {
-                    pressedPopupButton = current
+                val current = findLamAlefPopupButtonAt(x, y)?.id
+                if (current != pressedPopupButtonId) {
+                    pressedPopupButtonId = current
                     invalidate()
                 }
             }
             MotionEvent.ACTION_UP -> {
-                val target = pressedPopupButton
-                pressedPopupButton = null
-                if (target != null) {
-                    if (target == "✕") {
+                val targetBtn = lamAlefPopupButtons.firstOrNull { it.id == pressedPopupButtonId }
+                    ?: findLamAlefPopupButtonAt(x, y)
+                pressedPopupButtonId = null
+                if (targetBtn != null) {
+                    if (targetBtn.label == "✕") {
                         isLamAlefPopupVisible = false
                     } else {
-                        onKeyListener?.invoke(target.first().code, target)
+                        onKeyListener?.invoke(targetBtn.label.first().code, targetBtn.label)
                         isLamAlefPopupVisible = false
                     }
                 } else if (!lamAlefPopupCardRect.contains(x, y)) {
@@ -1343,17 +1348,17 @@ class KeyboardView(
                 invalidate()
             }
             MotionEvent.ACTION_CANCEL -> {
-                pressedPopupButton = null
+                pressedPopupButtonId = null
                 isLamAlefPopupVisible = false
                 invalidate()
             }
         }
     }
 
-    private fun findLamAlefPopupButtonAt(x: Float, y: Float): String? {
-        for ((label, rect) in lamAlefPopupButtons) {
-            if (rect.contains(x, y)) {
-                return label
+    private fun findLamAlefPopupButtonAt(x: Float, y: Float): PopupButton? {
+        for (btn in lamAlefPopupButtons) {
+            if (btn.rect.contains(x, y)) {
+                return btn
             }
         }
         return null

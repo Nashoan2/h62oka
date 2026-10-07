@@ -240,7 +240,7 @@ fun PrivacyUI(
             title = "مسح سجل الحافظة؟",
             message = "سيؤدي هذا إلى حذف جميع العناصر البالغ عددها ${clipboardItems.size}. لا يمكن التراجع عن هذا الإجراء.",
             onConfirm = {
-                clipboardHistory.clear()
+                clipboardHistory.clear(context)
                 clipboardItems = emptyList()
                 showClearConfirmation = false
             },
@@ -256,7 +256,8 @@ fun PrivacyUI(
             title = "حذف كافة البيانات؟",
             message = "سيؤدي هذا إلى حذف دائم لجميع بيانات الكتابة والتخصيص المحفوظة على هذا الجهاز.",
             onConfirm = {
-                clipboardHistory.clear()
+                clipboardHistory.clearAll()
+                clipboardHistory.clear(context)
                 userDict.reset()
                 TypedDataStores.clearAll(context)
                 clipboardItems = emptyList()
